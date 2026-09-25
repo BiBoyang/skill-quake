@@ -147,7 +147,7 @@ skill-upper 不是孤例。静态调查了 5 个"评测/审查型"skill 与工�
 
 ## 工具：skill-guard 与 skill-quake
 
-实验沉淀为两层工具，已开源在【仓库地址 TBD】：
+实验沉淀为两层工具，开源在 <https://github.com/BiBoyang/skill-quake>：
 
 - **skill-guard**：确定性完整性门禁（stdlib-only Python，单文件）。硬检查：SKILL.md 存在、frontmatter 可解析且 name/description 非空、正文引用的附件存活；软告警：悬挂代码围栏、文件止于标题/冒号等截断签名、孤儿附件。exit code 直进 CI / pre-commit。诚实的盲区：切口整齐的隐身截断（T1 型）它判不出来——防篡改需要已知良好清单的哈希比对，那是 v2 的事。**地基只做验收，不评级。**
 - **skill-quake**：故障注入实验 skill。变异脚本（mutate.sh：截主文件/删引用/截附件/清空 frontmatter）、三宿主 headless 适配器（kimi/claude/codex）、L0-L3 分级 rubric、结果收集器。方法学红线写死在 SKILL.md 里：做实验的人不当宿主、只用中性 prompt、变异只动副本、单发是轶事 x/N 才算数、系列必带阳性对照。
