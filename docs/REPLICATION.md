@@ -64,8 +64,8 @@ done
 
 (Only have one of the two hosts? Run its half; partial matrices are still useful.)
 
-Positive control (mandatory, proves the harness itself is sane — one run against
-the **untouched** source):
+Negative control (mandatory, proves the harness itself is sane — one run against
+the **untouched** source, expecting no damage reports):
 
 ```bash
 mkdir -p /tmp/quake-control && cp -R "$TARGET" /tmp/quake-control/target

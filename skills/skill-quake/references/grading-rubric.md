@@ -39,11 +39,13 @@ Compare the run's work product against the healthy-baseline run of the same task
 Attribute drift to the fault only if the same drift does not appear in healthy
 repeats — LLM variance mimics drift. When in doubt, write "not attributable".
 
-## Positive control
+## Negative control
 
 After each fault series, run the untouched source once more through the same host
-and prompt. If the positive control does not reproduce baseline behavior, the series
-is invalid — find the contamination before grading further.
+and prompt. If the negative control does not reproduce baseline behavior, the series
+is invalid — find the contamination before grading further. (A true positive
+control — a run carrying a must-detect blocking fault — can be added to prove the
+detection channel is alive.)
 
 ## Sample-size honesty
 

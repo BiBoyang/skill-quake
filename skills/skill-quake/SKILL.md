@@ -23,8 +23,10 @@ this skill orchestrates the parts that need judgment.
    filesystem-layer witness) and keep its output next to the run's report.
 5. **Single runs are anecdotes.** Report detection as `x/N` per cell. A cell with
    N=1 proves existence, nothing more.
-6. **Positive control.** After any fault series, rerun the untouched baseline once;
-   behavior must return to normal before you trust the series.
+6. **Negative control.** After any fault series, rerun the untouched baseline once;
+   behavior must return to normal before you trust the series. (Optionally pair it
+   with a true positive control — one run carrying a must-detect blocking fault —
+   to prove the detection channel itself is alive.)
 7. **Opaque paths.** No path visible to the host may encode the fault type or cell
    name (e.g. `.../truncate-main-60/run-1/skill` leaks the wound). Stage mutated
    copies under hash-named directories; `scripts/matrix.sh` does this
@@ -84,7 +86,7 @@ python3 scripts/collect.py <results-dir>
 ```
 
 Report per cell: guard verdict, detection x/N, levels, drift summary. Always include
-the positive control. State the N-is-small caveat in every writeup.
+Always include the negative control. State the N-is-small caveat in every writeup.
 
 ### Step 6: Iterate
 

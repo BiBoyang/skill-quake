@@ -39,7 +39,7 @@ work). Run the fixture suite: `bash tests/run_tests.sh`.
 Install into your agent host (e.g. `~/.agents/skills/skill-quake` for kimi-code) or
 drive its scripts directly. It enforces the methodology: fresh zero-context hosts,
 neutral prompts, mutated copies only, guard witness per run, L0-L3 grading,
-positive controls, honest x/N reporting. See `skills/skill-quake/SKILL.md`.
+negative controls, honest x/N reporting. See `skills/skill-quake/SKILL.md`.
 
 ## Replicating with native Claude/GPT hosts
 

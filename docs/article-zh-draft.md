@@ -1,7 +1,7 @@
 # 考官带伤阅卷：对 Agent Skill 做故障注入的完整性实验
 
-> 草稿 v0.9（全部方向数据已填，待真人审阅；仓库地址待发布时回填）
-> 实验仓库：本仓库（skill-quake）　原始单次实验记录：见 docs/ 与本仓库 results 汇总（原始 transcript 不公开）
+> 草稿 v1.0-RC（GLM 复审后修订：更正两处事实性断言、统一编号与统计口径）
+> 实验仓库：<https://github.com/BiBoyang/skill-quake>（量化汇总见正文表格；原始 transcript 含本地环境信息，未公开）
 
 ## 引子：从"流"到"文件"
 
@@ -27,7 +27,7 @@
 | T2 | 删除一个正文明确引用的附件（references/eval-yaml.md） | 拷贝丢文件 |
 | T3 | 一个附件截断到一半（judge-types.md 96→48 行，止于一个空标题） | 半截写盘 |
 | T4 | 清空 frontmatter 的 name/description | 生成/编辑事故 |
-| T5 | 阳性对照：全部恢复，重跑基线 | 证明流程无残留 |
+| C0 | 阴性对照：全部恢复，重跑基线，期望无误报 | 证明流程无残留、证人无误报 |
 
 目标 skill 是自造的 hello-world 级 `greeting-card`（不碰任何真实第三方 skill）。每个故障做完即 `git checkout` 恢复，证人确认签名回到健康态再进下一个。
 
@@ -41,17 +41,17 @@
 | T2 删附件 | 捕获死链 | 主动报告"References 列出了 eval-yaml.md 但磁盘上不存在"，改用模板代偿 | L2 |
 | T3 截附件 | 仅启发式告警（悬挂标题） | 主动报告"judge-types.md 在 agent_judge 标题处戛然而止，48 行" | L2 |
 | T4 空 frontmatter | 捕获两个必填字段为空 | **只字未提**，照常跑完 | L0 † |
-| T5 对照 | 健康 | 正常，无误报 | — |
+| C0 阴性对照 | 健康 | 正常，无误报 | — |
 
 单次结果就很有意思：挡路的伤（截断主文件、断链）被发现了；不挡路的元数据伤（frontmatter）被无视了——因为我们用"直接给路径"的方式加载，绕过了发现层，而 frontmatter 恰恰是给发现层用的。
 
-† 但 T4 的 L0 只活了一天：第三轮批量复测时，3 路宿主全部明确指出了空 frontmatter（合计 3/4），其中一路还主动推断"可能影响其被宿主正确识别/触发"。单发是轶事——我们自己第一轮就差点把轶事写成"稳定 L0"的结论。修正后的准确说法：执行层对 frontmatter 之伤的检出也是概率性的；它真正的无声区在 loader 层（见下文实测）。
+† 但 T4 的 L0 只活了一天：第三轮批量复测时 3 路宿主全部明确指出了空 frontmatter，其中一路还主动推断"可能影响其被宿主正确识别/触发"。单发是轶事——我们自己第一轮就差点把轶事写成"稳定 L0"的结论。修正后的准确说法：执行层对 frontmatter 之伤的检出也是概率性的；它真正的无声区在 loader 层（见下文实测）。（统计口径：首轮为手工实验，不并入批量累计表；首轮这发 L0 保留为轶事证据。）
 
 ## 回马枪：带伤的考官改带伤的卷子
 
-把残缺最轻的一版（T3，附件截半）的 skill-upper 留下，再给它一个被做了同样手脚的目标 skill（tone-guide.md 从 28 行截到 14 行，被截掉的后半独有 5 条格式规则：恰好一个 emoji、长度上限、禁 markdown、禁 Dear 开头、中英文匹配）。
+把残缺最轻的一版（T3，附件截半）的 skill-upper 留下，再给它一个被做了同样手脚的目标 skill（tone-guide.md 从 28 行截到 14 行，被截掉的后半独有这些规则：恰好一个 emoji、中英文匹配、只输出卡面正文、禁 markdown、禁 Dear 开头、禁代用户承诺）。
 
-结果：**两处伤都没被发现**。更要紧的是卷子真的改歪了——健康基线的判分脚本显式检查恰好一个 emoji、长度 ≤60 词、无 markdown、不以 Dear 开头；带伤考官产出的 6 个用例对这些规则**全部零命中**。文档残缺 → 理解残缺 → 用例残缺，沿链静默传导，全程无告警。
+结果：**两处伤都没被发现**。更要紧的是卷子真的改歪了——健康基线的判分脚本对格式规则有 5 项显式机械断言（恰好一个 emoji、emoji 在末尾、长度 ≤60 词、无 markdown、不以 Dear 开头），带伤考官产出的 6 个用例对其中源自被截半段的断言（恰好一个 emoji、无 markdown、不以 Dear 开头；另加整个中英文匹配用例）**全部零命中**。长度上限那条虽位于幸存的前半段，P2 也未覆盖——那一格算模型方差，不算伤的后果（分级口径：不归因）。文档残缺 → 理解残缺 → 用例残缺，沿链静默传导，全程无告警。
 
 一个自己带着伤的考官，发现不了考生身上同样的伤。
 
@@ -75,21 +75,21 @@
 
 挡路的伤稳定检出，不挡路的伤明显概率性——**检出与否不取决于伤有多重，取决于伤是否挡在 agent 要走的路上**。T3 里两个检出的宿主甚至给出了代偿方案（"改用 case.yaml.tmpl 的注释示例补齐 agent_judge 字段"），没检出的六个则是读完了文件、用了它的决策树、但谁也没发现文件只读到一半。
 
-## 第三轮：全故障菜单，画出剂量-响应曲线
+## 第三轮：全故障菜单——检出率由"挡路程度"决定
 
-前两轮只试了四种伤里的两种。把故障菜单补全再测一轮（kimi 宿主，新格子 N=3，累计数据合并前两轮）：
+前两轮只试了四种伤里的两种。把故障菜单补全再测一轮（kimi 宿主，新增三格各 N=3：T5=用例模板截半、T6=删 Step 2 点名要复制的模板、T1-85=主文件截 85% 的剂量变体；与仓库 `results/C/` 的 cell 名一致）。统计口径：首轮手工实验不并入本表；批量运行（第二轮 A 轮 + 第三轮 C 轮）为累计口径。
 
-| 故障 | 伤与执行路径的关系 | 检出率 |
+| 故障 | 伤与执行路径的关系 | 检出率（批量口径） |
 |---|---|---|
 | T1 主文件截 60%（后续步骤消失） | 直接挡路 | 8/8 |
 | T1 主文件截 85%（只丢尾部速查表与索引） | 半挡 | 1/3 |
-| T2 删正文引用的附件 | 挡 | 首轮 1/1 |
+| T2 删正文引用的附件 | 挡 | 1/1（仅首轮手工，未批量复测） |
 | T6 删 Step 2 指令点名要复制的模板 | 指令直接落空 | 3/3 |
 | T5 用例模板截半（丢了 judge 段骨架） | 半挡 | 2/3 |
 | T3 参考文档截半（可选查阅） | 不挡 | 2/8 |
-| T4 frontmatter 清空 | 不挡（路径加载） | 3/4 † |
+| T4 frontmatter 清空 | 不挡（路径加载） | 3/3 |
 
-规律收敛成一句：**检出率不取决于伤有多重，取决于伤是否横在 agent 正要执行的那条指令上。** 指令说"复制 `assets/eval.yaml.tmpl`"而文件不在 → 3/3；主流程后续步骤凭空消失 → 8/8；"可以参考"的文档坏了一半 → 2/8 到 2/3；与本次执行无关的元数据 → 看机缘。
+规律收敛成一句：**检出率不取决于伤有多重，取决于伤是否横在 agent 正要执行的那条指令上。** 注意这张表不是剂量-响应——T1 截 60%（丢 40% 内容）检出 8/8，截 85%（丢 15%）反而只有 1/3：自变量从来不是"伤的大小"，是"伤的位置"。指令说"复制 `assets/eval.yaml.tmpl`"而文件不在 → 3/3；主流程后续步骤凭空消失 → 8/8；"可以参考"的文档坏了一半 → 2/8 到 2/3；与本次执行无关的元数据 → 批量 3/3 但首轮曾有一发完全无视——概率性的意思是：每次都掷骰子。
 
 机械证人侧也有一个对称盲区：模板文件（.tmpl）的截断连 skill-guard 也判不出来——截断签名启发式只适用于 markdown，模板以注释结尾再正常不过。这类伤只有两种东西能接住：下游 validate 报错，或 agent 的警觉。
 
@@ -98,9 +98,9 @@
 T4（空 name/description）在执行层不可见，那真实的 skill 加载器怎么处理它？实测了两个宿主（各装一对探针 skill：一个健康、一个空 frontmatter，观察注册行为）：
 
 - **kimi-code**：空 frontmatter 的探针**从列表里静默消失**——无错误、无警告，健康探针正常在列。
-- **Claude Code**：空 frontmatter 的探针**降级注册**——以目录名兜底作为 name 和 description 出现在列表里。能按名字显式调用，但永远不可能被描述匹配触发。值守 agent 还顺带指出"这个 skill 的描述就是它自己的名字，看起来很可疑"。
+- **Claude Code**：空 frontmatter 的探针**降级注册**——以目录名兜底作为 name 和 description 出现在列表里。结果就是一条"僵尸条目"：日常查询几乎不可能命中它（除非查询恰好撞上目录名），没有任何触发语义可言。值守 agent 还顺带指出"这个 skill 的描述就是它自己的名字，看起来很可疑"。
 
-两个 loader 都不报错。一个静默丢弃，一个降级成不可触发的僵尸条目——frontmatter 之伤在加载层同样没有防线，只是死法不同。
+两个 loader 都不报错。一个静默丢弃，一个降级成僵尸条目——frontmatter 之伤在加载层同样没有防线，只是死法不同。（实测版本：kimi-code 当前会话版 / Claude Code 2.1.282；loader 行为随版本漂移，此处仅为此版本的快照。）
 
 ## 插曲：一次无效的矩阵运行
 
@@ -139,7 +139,7 @@ skill-upper 不是孤例。静态调查了 5 个"评测/审查型"skill 与工�
 
 ## 结论
 
-1. **skill-up 对 SKILL.md 的完整性防线≈零。** CLI 只检查文件存在（`internal/cli/run.go:705` 的 `isRegularFile`），安装即拷贝，全仓库无 frontmatter 解析；`validate` 只校验 eval.yaml schema（这一层它确实兜得住：缺失 case 文件、截断 YAML 都会硬报错）。最硬的佐证来自它自己的测试套件：e2e 夹具里的 SKILL.md 全是**没有 frontmatter 的占位文件**（"This is a mock skill used for deterministic pipeline testing"）——因为没有任何代码路径会读它。
+1. **skill-up 对 SKILL.md 内容层的完整性防线≈零。** CLI 确实会解析 frontmatter——但只软读 `name` 一个字段用于命名展示（`internal/config/loader.go:240` 的 `parseSkillName`），任何失败（文件缺失/无围栏/YAML 解析错/name 为空）都**静默回退到目录名、零告警**；`description` 从不读，正文引用的附件存活性从不查，`run.go:705` 对 SKILL.md 本体只做 `isRegularFile` 存在性检查。对照之下 `validate` 对 eval 配置层兜得住（缺失 case 文件、截断 YAML 都硬报错）——**eval 配置层有防线，skill 内容层没有**。它自己的 e2e 套件是这个设计的镜子：17 个夹具里 14 个有完整 frontmatter，唯独 3 个没有（mock-engine、multiturn-session、custom-engine）的占位文件被流水线实际使用且照跑不误——流水线容忍无 frontmatter，因为这层从来不做强制校验。这种"静默兜底、绝不打扰"的哲学，和我们在 loader 层实测到的行为（Claude Code 降级注册、kimi-code 静默丢弃）是同一款。
 2. **skill-upper 的评测 rubric 里没有"技能完整性"维度。** 它读目标 skill 是为了提取行为生成用例，从不校验文档完整性——评的是行为，不是文档健康。
 3. **唯一生效的防线是宿主警觉性，其检出率与"伤是否横在执行路径上"强相关（8/8 到 2/8 的梯度），与伤的严重程度无关。** 把完整性交给"agent 会不会刚好注意到"，等于没有防线。
 4. **带伤的考官改不准带伤的卷子。** 目标残缺会沿"文档→理解→用例"链静默传导进评测结论。
@@ -171,20 +171,19 @@ skill-upper 不是孤例。静态调查了 5 个"评测/审查型"skill 与工�
 实验沉淀为两层工具，开源在 <https://github.com/BiBoyang/skill-quake>：
 
 - **skill-guard**：确定性完整性门禁（stdlib-only Python，单文件）。硬检查：SKILL.md 存在、frontmatter 可解析且 name/description 非空、正文引用的附件存活；软告警：悬挂代码围栏、文件止于标题/冒号等截断签名、孤儿附件。exit code 直进 CI / pre-commit。诚实的盲区：切口整齐的隐身截断（T1 型）它判不出来——防篡改需要已知良好清单的哈希比对，那是 v2 的事。**地基只做验收，不评级。**
-- **skill-quake**：故障注入实验 skill。变异脚本（mutate.sh：截主文件/删引用/截附件/清空 frontmatter）、三宿主 headless 适配器（kimi/claude/codex）、L0-L3 分级 rubric、结果收集器。方法学红线写死在 SKILL.md 里：做实验的人不当宿主、只用中性 prompt、变异只动副本、单发是轶事 x/N 才算数、系列必带阳性对照。
+- **skill-quake**：故障注入实验 skill。变异脚本（mutate.sh：截主文件/删引用/截附件/清空 frontmatter）、三宿主 headless 适配器（kimi/claude/codex）、L0-L3 分级 rubric、结果收集器。方法学红线写死在 SKILL.md 里：做实验的人不当宿主、只用中性 prompt、变异只动副本、单发是轶事 x/N 才算数、宿主可见路径不得编码伤型、系列必带阴性对照。
 - `docs/REPLICATION.md` 是自助复现手册：拿着原生 Claude/GPT 订阅的人照着跑就能补出宿主矩阵的另一半。
 
 ## 局限
 
 - 单条件样本量小（N=8/3），只能区分"稳定/概率性/稳定漏检"三档，给不出精确概率；文中的 x/N 不应被读作比率估计。
-- 宿主矩阵 Claude Code 列跑在 kimi 模型上，测的是宿主脚手架差异；Codex 列无效（中转额度耗尽），且事后发现其配置本就是 gpt 系中转而非 kimi——"模型统一"的口径对那一列从未成立。原生 Claude/GPT 对照列待复现（REPLICATION.md）。
+- 宿主矩阵三列模型均为 kimi（kimi-code 为 k3 子代理、Claude Code 2.1.282 与 Codex CLI 0.156.1 经 kimi provider 接入），测的是宿主脚手架差异；Codex 首轮 6 路因默认中转额度耗尽作废（归档备查），重跑 6 路的会话头均显示 `provider: kimi / model: kimi-for-coding`。采样温度未固定，各宿主的系统提示词不同——"概率性检出"应在此口径下理解。原生 Claude/GPT 对照列待复现（REPLICATION.md）。
 - Claude Code 列部分运行的 CLI 执行被沙箱阻断（`--add-dir` 授了 skill 目录的读，未授 bin 目录的执行）——检出轴不受影响，但 validate 层的证据不完整。
 - 实验任务是"设计评测 + validate"，未跑真实 `skill-up run`（无引擎凭据）；带伤执行阶段的行为未覆盖。
 - skill-guard 的截断检测是启发式，切口整齐的隐身截断（T1 型）是已知盲区，防篡改需哈希清单（v2 方向）。
 
 ## 附：实验资产索引
 
-- 单次实验全记录：EXPERIMENT-LOG.md（含每次注入的 diff、证人输出、行为证据摘录）
-- 量化数据：results/A/summary-A.md（kimi 18 路）、results/summary-B.md（宿主矩阵）
-- 原始报告：results/<cell>/run-N/report.md + grade.json；无效环境样本另存 results/B-invalid-env/
-- 工具：bin/skill-guard、skills/skill-quake/、tests/（夹具自测套件）
+- 工具与文档（公开）：`bin/skill-guard`、`skills/skill-quake/`、`tests/`（夹具自测套件）、`docs/REPLICATION.md`，均在 <https://github.com/BiBoyang/skill-quake>
+- 量化汇总：正文各表即全量汇总（与本地 `results/A/summary-A.md`、`results/C/summary-C.md`、`results/summary-B.md` 一致）
+- 原始 transcript 与逐路报告（含本地路径等环境信息）未公开；每个 cell 的 `report.md` + `grade.json` 可按 `docs/REPLICATION.md` 复现生成
