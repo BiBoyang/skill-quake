@@ -1,0 +1,171 @@
+#!/usr/bin/env python3
+"""skill-guard — mechanical integrity gate for Agent Skills.
+
+Philosophy: the foundation only *accepts or rejects*; it does not grade.
+Content quality is for LLM judges; file integrity is for machines.
+
+Hard checks (exit 1):
+  - SKILL.md missing
+  - frontmatter missing / unterminated
+  - required frontmatter fields (name, description) missing or empty
+  - files referenced from any *.md in the skill but absent on disk
+
+Warnings (exit 0 unless --strict):
+  - name not lowercase-hyphen / differs from directory name
+  - truncation signatures: dangling code fence, file ends at a heading,
+    last content line ends with a colon (looks cut off)
+  - empty files; orphan attachment files never referenced anywhere
+
+Usage: skill-guard <skill-dir> [--strict] [--json]
+"""
+import argparse
+import json
+import os
+import re
+import sys
+
+REF_RE = re.compile(r"(?:references|assets|scripts)/[\w][\w./-]*[\w.]", re.ASCII)
+NAME_RE = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
+FENCE_RE = re.compile(r"^```", re.MULTILINE)
+SKIP_DIRS = {".git", "node_modules", "__pycache__"}
+
+
+def strip_fences(text):
+    """Remove fenced code blocks; doc examples inside them are not real references."""
+    out, in_fence = [], False
+    for ln in text.splitlines():
+        if ln.strip().startswith("```"):
+            in_fence = not in_fence
+            continue
+        if not in_fence:
+            out.append(ln)
+    return "\n".join(out)
+
+
+def parse_frontmatter(text):
+    """Return (fields, body_lines, error_or_None). Naive but strict enough for a gate."""
+    lines = text.splitlines()
+    if not lines or lines[0].strip() != "---":
+        return {}, lines, "frontmatter missing (file does not start with ---)"
+    fields = {}
+    for i, ln in enumerate(lines[1:], start=1):
+        if ln.strip() == "---":
+            return fields, lines[i + 1 :], None
+        m = re.match(r"^([A-Za-z_][\w-]*):\s*(.*)$", ln)
+        if m:
+            fields[m.group(1)] = m.group(2).strip().strip('"').strip("'")
+    return {}, lines, "frontmatter unterminated (no closing ---)"
+
+
+def truncation_warnings(rel, text):
+    out = []
+    if len(FENCE_RE.findall(text)) % 2 == 1:
+        out.append(f"{rel}: odd number of ``` fences — code block looks unterminated")
+    body = [ln for ln in text.splitlines() if ln.strip()]
+    if body:
+        tail = body[-1].strip()
+        if tail.startswith("#"):
+            out.append(f"{rel}: ends at a heading ({tail[:40]!r}) with no content after it")
+        elif tail.endswith((":", "：")):
+            out.append(f"{rel}: last line ends with a colon ({tail[:40]!r}) — content may be cut off")
+    return out
+
+
+def guard(root):
+    errors, warnings, info = [], [], []
+    skill_md = os.path.join(root, "SKILL.md")
+    if not os.path.isfile(skill_md):
+        return {"errors": [f"{root}: SKILL.md missing"], "warnings": [], "info": []}
+
+    md_files = []
+    for dirpath, dirnames, filenames in os.walk(root):
+        dirnames[:] = [d for d in dirnames if d not in SKIP_DIRS]
+        for f in sorted(filenames):
+            p = os.path.join(dirpath, f)
+            rel = os.path.relpath(p, root)
+            if f.endswith(".md"):
+                md_files.append(rel)
+            if os.path.getsize(p) == 0:
+                warnings.append(f"{rel}: empty file (0 bytes)")
+
+    text = open(skill_md, encoding="utf-8").read()
+    fields, _, fm_err = parse_frontmatter(text)
+    if fm_err:
+        errors.append(f"SKILL.md: {fm_err}")
+    else:
+        for key in ("name", "description"):
+            if key not in fields:
+                errors.append(f"SKILL.md: required frontmatter field '{key}' missing")
+            elif not fields[key]:
+                errors.append(f"SKILL.md: required frontmatter field '{key}' is empty")
+        name = fields.get("name", "")
+        if name:
+            if not NAME_RE.match(name):
+                warnings.append(f"SKILL.md: name {name!r} is not lowercase-hyphen format")
+            dirname = os.path.basename(os.path.abspath(root))
+            if name != dirname:
+                warnings.append(
+                    f"SKILL.md: name {name!r} != directory name {dirname!r} "
+                    f"(agentskills convention; expected in copied/renamed dirs)"
+                )
+    warnings.extend(truncation_warnings("SKILL.md", text))
+
+    referenced = {}
+    for ref in REF_RE.findall(strip_fences(text)):
+        referenced.setdefault(ref, []).append("SKILL.md")
+    soft_referenced = {}
+    for rel in md_files:
+        t = open(os.path.join(root, rel), encoding="utf-8").read()
+        if rel != "SKILL.md":
+            warnings.extend(truncation_warnings(rel, t))
+            for ref in REF_RE.findall(strip_fences(t)):
+                soft_referenced.setdefault(ref, []).append(rel)
+    for ref, referrers in sorted(referenced.items()):
+        if not os.path.exists(os.path.join(root, ref)):
+            errors.append(f"{ref}: referenced by {', '.join(referrers)} but missing on disk")
+    for ref, referrers in sorted(soft_referenced.items()):
+        if ref not in referenced and not os.path.exists(os.path.join(root, ref)):
+            info.append(
+                f"{ref}: referenced by {', '.join(referrers)} but missing "
+                f"(secondary doc — not gated; may be a hypothetical example)"
+            )
+
+    for dirpath, dirnames, filenames in os.walk(root):
+        dirnames[:] = [d for d in dirnames if d not in SKIP_DIRS]
+        for f in sorted(filenames):
+            rel = os.path.relpath(os.path.join(dirpath, f), root)
+            top = rel.split(os.sep)[0]
+            if top in ("references", "assets", "scripts") and rel not in referenced and rel not in soft_referenced and f != "SKILL.md":
+                info.append(f"{rel}: never referenced from any .md (orphan attachment?)")
+
+    return {"errors": errors, "warnings": warnings, "info": info}
+
+
+def main():
+    ap = argparse.ArgumentParser(description="Mechanical integrity gate for Agent Skills")
+    ap.add_argument("skill_dir")
+    ap.add_argument("--strict", action="store_true", help="warnings also fail the gate")
+    ap.add_argument("--json", action="store_true", help="machine-readable output")
+    args = ap.parse_args()
+
+    result = guard(args.skill_dir)
+    errors, warnings = result["errors"], result["warnings"]
+    failed = bool(errors) or (args.strict and warnings)
+
+    if args.json:
+        result["skill_dir"] = args.skill_dir
+        result["verdict"] = "FAIL" if failed else "PASS"
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+    else:
+        for e in errors:
+            print(f"ERROR   {e}")
+        for w in warnings:
+            print(f"WARN    {w}")
+        for i in result["info"]:
+            print(f"info    {i}")
+        print(f"{'FAIL' if failed else 'PASS'}  ({len(errors)} error(s), {len(warnings)} warning(s))")
+    return 1 if failed else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
