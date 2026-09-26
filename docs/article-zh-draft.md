@@ -2,6 +2,7 @@
 
 > 草稿 v1.0-RC5（两轮 GLM 复审 + 场外补记三连：手动双运行 + 独立 agent 完整矩阵复现）
 > 实验仓库：<https://github.com/BiBoyang/skill-quake>（量化汇总见正文表格；原始 transcript 含本地环境信息，未公开）
+> 状态：本文已发布于博客（2026-09-27）：<https://biboyang.github.io/posts/考官带伤阅卷-对-Agent-Skill-做故障注入的完整性实验/>。此处为工作稿——后续补记与修订先落这里，博客版定格不追。
 
 ## 引子：从"流"到"文件"
 
