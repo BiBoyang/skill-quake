@@ -32,6 +32,13 @@ this skill orchestrates the parts that need judgment.
    copies under hash-named directories; `scripts/matrix.sh` does this
    automatically. Hosts HAVE reverse-engineered the experiment from path names —
    treat this as a real contamination channel.
+8. **No pristine original within reach.** If the host can find an undamaged copy of
+   the same skill on the machine (the source repo, a package cache, another
+   install), a detection aided by diffing against it does not count — real
+   deployments have no reference copy. Neutralize the original for the run, or
+   record the contamination in the cell notes. (Observed in the wild: a host
+   noticed a dangling mode-picker reference, then located the pristine repo on
+   disk and diffed against it.)
 
 ## Flow
 
