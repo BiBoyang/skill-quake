@@ -164,7 +164,7 @@ skill-upper 不是孤例。静态调查了 5 个"评测/审查型"skill 与工�
 - **输出被机器/流程消费的 skill**（测评、生成配置、进 CI 门禁的）：结论是 verdict 不是文本，错了没人看见（回马枪里那 4 条源自被截半段的格式断言零命中就是这样）——值得发布期门禁，高 stakes 再加哈希清单。但依然不用花 token。
 - **分发给很多人的 skill**：检查该长在安装器/包管理那一层（lockfile 式校验），装的时候验，而不是用的时候每次烧上下文自查。
 
-一句话：**完整性是供应链问题，不是上下文问题。** 地基的验收长在地基上；长在正文里的验收既贵又不灵。这也是我们给 skill-up 的 PR 把检查放进 CLI（Go 代码）而不是 skill 正文的原因——skill 一个字节都不用长胖。
+一句话：**完整性是供应链问题，不是上下文问题。** 地基的验收长在地基上；长在正文里的验收既贵又不灵。这也是我们给 skill-up 的 [PR #281](https://github.com/alibaba/skill-up/pull/281) 把检查放进 CLI（Go 代码）而不是 skill 正文的原因——skill 一个字节都不用长胖。
 
 ## 工具：skill-guard 与 skill-quake
 
@@ -183,6 +183,8 @@ skill-upper 不是孤例。静态调查了 5 个"评测/审查型"skill 与工�
 - skill-guard 的截断检测是启发式，切口整齐的隐身截断（T1 型）是已知盲区，防篡改需哈希清单（v2 方向）。
 
 ## 附：实验资产索引
+
+- 上游互动：[issue #280](https://github.com/alibaba/skill-up/issues/280)（含两条主动更评）、[draft PR #281](https://github.com/alibaba/skill-up/pull/281)（CI 全绿，待维护者回应）
 
 - 工具与文档（公开）：`bin/skill-guard`、`skills/skill-quake/`、`tests/`（夹具自测套件）、`docs/REPLICATION.md`，均在 <https://github.com/BiBoyang/skill-quake>
 - 量化汇总：正文各表即全量汇总（与本地 `results/A/summary-A.md`、`results/C/summary-C.md`、`results/summary-B.md` 一致）
