@@ -60,3 +60,14 @@ A spike proves auth works *now*, not that the balance survives the whole matrix 
 a relay account died of a 403 mid-matrix in practice, killing 5 of 6 runs. For
 metered/relay providers, check the balance before starting and treat mid-matrix
 deaths as environment failures (discard the cell), never as data.
+
+## Host configuration is part of the cell
+
+The same CLI can run different models, and the same model can run at different
+thinking/reasoning effort — both change detection behavior. Before any matrix,
+record per host: CLI version, model, and effort level (e.g. kimi CLI's global
+`[thinking] effort`, codex CLI's `model_reasoning_effort`), and put all three
+in `meta.json`. Observed in the repo-quake runs (2026-10): on an identical
+fault, k3-256k under codex CLI detected 5/8 while kimi-for-coding detected 0/8
+under BOTH shells — a model/effort difference, not a shell difference. An
+unrecorded effort change between cells silently rewrites your conclusions.

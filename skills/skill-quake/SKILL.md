@@ -32,6 +32,13 @@ this skill orchestrates the parts that need judgment.
    copies under hash-named directories; `scripts/matrix.sh` does this
    automatically. Hosts HAVE reverse-engineered the experiment from path names —
    treat this as a real contamination channel.
+   **Artifacts count as paths.** `guard.json`, `prompt.txt`, `meta.json` —
+   anything whose mere existence announces "experiment" — must live outside
+   every tree the host can read. Stage the mutated copy and the workdir in one
+   hash-named tree; keep witness and dispatch artifacts in a separate,
+   host-invisible tree. (Observed in the repo-quake runs, 2026-09: a host read
+   the witness output in the staging parent directory and reverse-engineered
+   the experiment mid-run.)
 8. **No pristine original within reach.** If the host can find an undamaged copy of
    the same skill on the machine (the source repo, a package cache, another
    install), a detection aided by diffing against it does not count — real
@@ -44,7 +51,9 @@ this skill orchestrates the parts that need judgment.
 
 ### Step 0: Baseline the source skill
 
-- Run `skill-guard <source-skill>`; it must PASS (warnings are acceptable, record them).
+- Run `skill-guard <source-skill>` (the companion CLI: `bin/skill-guard` in the
+  skill-quake repo, or anywhere on your PATH); it must PASS (warnings are
+  acceptable, record them).
 - Read the source SKILL.md fully and map its structure: frontmatter fields, sections,
   referenced attachments. Mark likely truncation-sensitive points.
 - Define the task the host will perform with the skill (e.g. "evaluate target X").
@@ -93,7 +102,7 @@ python3 scripts/collect.py <results-dir>
 ```
 
 Report per cell: guard verdict, detection x/N, levels, drift summary. Always include
-Always include the negative control. State the N-is-small caveat in every writeup.
+the negative control. State the N-is-small caveat in every writeup.
 
 ### Step 6: Iterate
 
@@ -129,3 +138,4 @@ in baseline runs too, so it never signals that damage exists.
 - `references/grading-rubric.md` — L0-L3 detection levels, drift comparison method
 - `references/host-adapters.md` — per-host headless invocation, skill-loading
   conventions, spike procedure, known limitations
+- `scripts/collect.py` — per-cell aggregation, run as shown in Step 5
