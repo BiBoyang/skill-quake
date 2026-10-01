@@ -56,5 +56,5 @@ tests/                     guard fixture suite
 docs/REPLICATION.md        native-model replication runbook
 ```
 
-License: TBD (Apache-2.0 intended). No affiliation with Alibaba; skill-up is its
+License: Apache-2.0 (see LICENSE). No affiliation with Alibaba; skill-up is its
 own project.

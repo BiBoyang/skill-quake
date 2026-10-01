@@ -2,7 +2,8 @@
 """collect.py — aggregate fault-injection runs into a summary table.
 
 Expects: <results>/<cell>/<run>/{meta.json, report.md, grade.json}
-  meta.json   (runner-written): {"host": "...", "fault": "...", "notes": "..."}
+  meta.json   (runner-written): {"host": "...", "fault": "...", "cell": "...",
+                                 "run": N, "stage": "...", "time": "..."}
   grade.json  (grader-written): {"level": "L0|L1|L2|L3", "detected": true|false,
                                  "drift": "...", "notes": "..."}
 Cell = one host x fault combination (e.g. "kimi+truncate-main").
