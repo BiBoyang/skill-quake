@@ -54,6 +54,25 @@ is invalid — find the contamination before grading further. (A true positive
 control — a run carrying a must-detect blocking fault — can be added to prove the
 detection channel is alive.)
 
+## Trace-level corroboration: reread_any
+
+When the run carries a tool-call trace (`trace.json`), `scripts/suspicion.py`
+computes `reread_any` (any single file read >= 2 times). Rules for using it:
+
+- **It is never a detection level.** Detection is graded from the deliverable
+  channel only; the flag lives in `notes` as corroboration.
+- `flag=True` + `L0` is its own noteworthy form: behavioral suspicion without a
+  report — the host went back and re-checked the file, then delivered anyway.
+  Record as "reread-no-report" (distinct from "perceived-but-unreported", which
+  is the scratchpad form).
+- `flag=False` + detected is expected for first-visible wounds (empty frontmatter)
+  and tool-error wounds (missing file): those channels do not need a re-read.
+- The healthy baseline ("one read per file") is task-shaped. Calibrate with C0
+  runs of the same task before treating a flag as anomalous.
+- Observed (pi host column, 2026-10, 34 runs): the flag caught every stealth
+  content-truncation detection with zero false positives; all three
+  detections-without-flag were first-visible or tool-error wounds.
+
 ## Sample-size honesty
 
 Report `x/N` and stop there. N=3 distinguishes "always / sometimes / never" at

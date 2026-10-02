@@ -51,6 +51,25 @@ Record the skip reason; never silently substitute another host.
   "agent following a markdown playbook", not about codex's skill loader.
 - `-m <model>` selects the model; default comes from `~/.codex/config.toml`.
 
+## pi
+
+- Headless: `pi --mode json -p --no-session --no-extensions "<prompt>"`.
+  Tested against pi 1.0.0 (npx `@earendil-works/pi-coding-agent@1.0.0`).
+- Provider/model: `--provider <name> --model <id>`; effort via `--thinking
+  off|minimal|low|medium|high|xhigh|max` — record all three in meta.json.
+- Isolation: `PI_CODING_AGENT_DIR=<dir>` redirects pi's config/auth/skills root;
+  install the mutated skill under `<dir>/skills/<name>/` to exercise the real
+  discovery loader (headless). A bare `--skill <path>` bypasses discovery and
+  changes what the experiment measures — keep the two modes labeled.
+- **Trace**: `--mode json` emits ordered JSONL events including every tool call —
+  `scripts/suspicion.py --pi-jsonl` extracts `trace.json` from it. Text mode
+  (`--mode text`) has no trace.
+- **Loader caveat (observed 2026-10)**: a skill whose frontmatter fails validation
+  is silently dropped at load in ALL headless modes (diagnostics render only in
+  interactive mode's startup panel). A run may therefore show the skill both
+  absent from discovery and present via the prompt's path pointer — record which
+  channels the host actually used.
+
 ## Quota and cost discipline
 
 Every headless run spends the account's quota. State the total run budget before a

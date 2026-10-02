@@ -82,11 +82,14 @@ needs one. Write the neutral prompt to `<rundir>/prompt.txt` with placeholders f
 
 - kimi: prefer a fresh subagent from the orchestrating agent (full tool access,
   zero context). CLI alternative: `scripts/run_host.sh kimi ...`.
-- claude / codex: `scripts/run_host.sh claude|codex <prompt.txt> <workdir> <out>`.
+- claude / codex / pi: `scripts/run_host.sh claude|codex|pi <prompt.txt> <workdir> <out>`.
 - Spike each host once before any matrix run (see `references/host-adapters.md`);
   a host that fails the spike is marked SKIP for the whole matrix, not retried.
 - Save raw output as `<rundir>/report.md`, and write `<rundir>/meta.json`
   (`host`, `fault`, `timestamp`, paths).
+- If the host adapter can capture an ordered tool-call trace, save it as
+  `<rundir>/trace.json` (`[{"name": "...", "arguments": {...}}, ...]`) —
+  `scripts/suspicion.py` consumes it (see host-adapters.md for which hosts can).
 
 ### Step 4: Grade
 
@@ -103,6 +106,19 @@ python3 scripts/collect.py <results-dir>
 
 Report per cell: guard verdict, detection x/N, levels, drift summary. Always include
 the negative control. State the N-is-small caveat in every writeup.
+
+### Trace-level signal: reread_any
+
+If runs carry `trace.json`, run `python3 scripts/suspicion.py --results <results-dir>`.
+`reread_any` is true when any single file is read >= 2 times in one run. In the pi
+host column (2026-10) it flagged every stealth-truncation detection with zero false
+positives — it is a zero-token tripwire for the fault class where gate, loader, and
+a single first read are all blind. Boundaries: wounds visible on first read
+(blank frontmatter) or surfacing as tool errors (missing file) detect WITHOUT
+re-reading (FN by design); the "one read per file" baseline is task-shaped, so
+calibrate with healthy runs before trusting the flag. **It is harness-side
+corroboration, never a detection level** — grade the deliverable channel as usual
+and record divergences (flag-but-L0, detection-without-flag) in `grade.json` notes.
 
 ### Step 6: Iterate
 

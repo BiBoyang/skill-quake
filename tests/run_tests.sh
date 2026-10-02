@@ -32,5 +32,38 @@ if [ "$rc" -eq 1 ]; then echo "ok   [strict-fails-on-warn]"; else echo "FAIL [st
 out=$(python3 $GUARD tests/fixtures/healthy-mini --json); rc=$?
 if [ "$rc" -eq 0 ] && grep -q '"verdict": "PASS"' <<<"$out"; then echo "ok   [json-mode]"; else echo "FAIL [json-mode]"; echo "$out"; fails=$((fails+1)); fi
 
+# suspicion.py: reread_any tripwire (trace-level signal, never a detection level)
+SUS=skills/skill-quake/scripts/suspicion.py
+tmp=$(mktemp -d)
+trap 'rm -rf "$tmp"' EXIT
+
+printf '%s' '[{"name":"read","arguments":{"path":"/a/SKILL.md"}},{"name":"read","arguments":{"path":"/a/refs.md"}},{"name":"read","arguments":{"path":"/a/SKILL.md"}}]' > "$tmp/reread.json"
+out=$(python3 $SUS --trace "$tmp/reread.json"); rc=$?
+if [ "$rc" -eq 0 ] && grep -q '"reread_any": true' <<<"$out"; then echo "ok   [suspicion-reread-flagged]"; else echo "FAIL [suspicion-reread-flagged]"; echo "$out"; fails=$((fails+1)); fi
+
+printf '%s' '[{"name":"read","arguments":{"path":"/a/SKILL.md"}},{"name":"read","arguments":{"path":"/a/refs.md"}},{"name":"read","arguments":{"path":"/a/tmpl"}}]' > "$tmp/clean.json"
+out=$(python3 $SUS --trace "$tmp/clean.json"); rc=$?
+if [ "$rc" -eq 0 ] && grep -q '"reread_any": false' <<<"$out"; then echo "ok   [suspicion-clean-passes]"; else echo "FAIL [suspicion-clean-passes]"; echo "$out"; fails=$((fails+1)); fi
+
+printf '%s\n' \
+  '{"type":"message_end","message":{"role":"assistant","content":[{"type":"toolCall","name":"read","arguments":{"path":"/a/SKILL.md"}}]}}' \
+  '{"type":"message_end","message":{"role":"user","content":"ignored"}}' \
+  '{"type":"message_end","message":{"role":"assistant","content":[{"type":"text","text":"no tools here"}]}}' \
+  '{"type":"message_end","message":{"role":"assistant","content":[{"type":"toolCall","name":"read","arguments":{"path":"/a/SKILL.md"}}]}}' > "$tmp/pi.jsonl"
+out=$(python3 $SUS --pi-jsonl "$tmp/pi.jsonl"); rc=$?
+if [ "$rc" -eq 0 ] && grep -q '"reads_total": 2' <<<"$out" && grep -q '"reread_any": true' <<<"$out"; then
+  echo "ok   [suspicion-pi-jsonl-extract]"
+else
+  echo "FAIL [suspicion-pi-jsonl-extract]"; echo "$out"; fails=$((fails+1))
+fi
+
+mkdir -p "$tmp/results/ghost+re-read/run-1" "$tmp/results/ghost+healthy/run-1"
+cp "$tmp/reread.json" "$tmp/results/ghost+re-read/run-1/trace.json"
+printf '%s' '{"level":"L2","detected":true}' > "$tmp/results/ghost+re-read/run-1/grade.json"
+cp "$tmp/clean.json" "$tmp/results/ghost+healthy/run-1/trace.json"
+printf '%s' '{"level":"L0","detected":false}' > "$tmp/results/ghost+healthy/run-1/grade.json"
+out=$(python3 $SUS --results "$tmp/results")
+if grep -q 'TP=1 FP=0 TN=1 FN=0' <<<"$out"; then echo "ok   [suspicion-results-confusion]"; else echo "FAIL [suspicion-results-confusion]"; echo "$out"; fails=$((fails+1)); fi
+
 echo "---"
 [ "$fails" -eq 0 ] && echo "ALL TESTS PASSED" || { echo "$fails TEST(S) FAILED"; exit 1; }
