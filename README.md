@@ -1,5 +1,14 @@
 # skill-quake
 
+> **Snapshot of the file/skill layer.** The canonical, still-growing method lives
+> in [repo-quake](https://github.com/BiBoyang/repo-quake) — `skills/skill-quake/`,
+> `bin/skill-guard`, `tests/` and `results/` are the same files, and method changes
+> land there first. This repo stays as the small, self-contained bundle for the
+> skill-layer experiment (~316 KB vs the umbrella's ~23 MB): clone it and run the
+> matrix, or hand it to someone who will. Narrative docs here
+> (`docs/article-zh-draft.md`, `docs/REPLICATION.md`) are maintained here; the
+> umbrella keeps labelled snapshots.
+
 Fault-injection tooling for Agent Skills, plus the mechanical integrity gate that
 the experiments argue for. Born from an experiment on Alibaba's
 [`skill-up`](https://github.com/alibaba/skill-up) (the `skill-upper` skill): when a
