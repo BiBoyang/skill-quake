@@ -7,6 +7,45 @@ output change?). Record both in `grade.json`:
 {"level": "L2", "detected": true, "drift": "none visible", "notes": "named file and damage"}
 ```
 
+## Invalid, ungraded and structured outcomes
+
+A run blocked by setup, permissions, quota or transport **before the target can act
+on the fault** is invalid, not a failed detection:
+
+```json
+{"level": "INVALID", "valid": false, "detected": false, "invalid_reason": "provider 503 before dispatch"}
+```
+
+A missing `grade.json` is ungraded. Invalid and ungraded runs stay visible in the
+run count and levels, but leave every metric denominator. Do not rewrite either as
+`0/N detected`.
+
+New runs may add independent boolean observations:
+
+```json
+{
+  "level": "L2",
+  "detected": true,
+  "reported": true,
+  "contained": false,
+  "recovered": null,
+  "reverified": null,
+  "drift": "rule coverage decreased",
+  "notes": "reported the missing file, then continued"
+}
+```
+
+- `reported`: a correct, user-facing report reached the deliverable channel.
+- `contained`: the host stopped, refused, quarantined or otherwise prevented the
+  damage from reaching the deliverable or side effects.
+- `recovered`: the system returned to a usable/safe state after the fault.
+- `reverified`: an independent post-recovery check passed.
+
+Omit a field or use `null` when it was not measured. Do not infer containment from
+L3, recovery from a final response, or any of these fields for old runs. `collect.py`
+reports each optional metric with its own `x/N` and `unknown` count; old results stay
+comparable only on the fields they actually recorded.
+
 ## Detection levels
 
 | level | meaning |

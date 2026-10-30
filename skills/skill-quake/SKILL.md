@@ -51,9 +51,9 @@ this skill orchestrates the parts that need judgment.
 
 ### Step 0: Baseline the source skill
 
-- Run `skill-guard <source-skill>` (the companion CLI: `bin/skill-guard` in the
-  skill-quake repo, or anywhere on your PATH); it must PASS (warnings are
-  acceptable, record them).
+- Run `skill-guard <source-skill>` (the companion CLI: `bin/skill-guard` at the repo
+  root — this umbrella or the standalone skill-quake bundle — or anywhere on your
+  PATH); it must PASS (warnings are acceptable, record them).
 - Read the source SKILL.md fully and map its structure: frontmatter fields, sections,
   referenced attachments. Mark likely truncation-sensitive points.
 - Define the task the host will perform with the skill (e.g. "evaluate target X").
@@ -85,8 +85,12 @@ needs one. Write the neutral prompt to `<rundir>/prompt.txt` with placeholders f
 - claude / codex / pi: `scripts/run_host.sh claude|codex|pi <prompt.txt> <workdir> <out>`.
 - Spike each host once before any matrix run (see `references/host-adapters.md`);
   a host that fails the spike is marked SKIP for the whole matrix, not retried.
-- Save raw output as `<rundir>/report.md`, and write `<rundir>/meta.json`
-  (`host`, `fault`, `timestamp`, paths).
+- Save raw output as `<rundir>/report.md`. Before dispatch, `matrix.sh` uses
+  `write_meta.py` to record `schema_version`, host/fault/run, target and host versions,
+  model, effort, prompt/fixture hashes and witness hashes/verdict. Set `QUAKE_TARGET_VERSION`,
+  `QUAKE_HOST_VERSION`, `QUAKE_MODEL` and `QUAKE_EFFORT`; `QUAKE_STRICT_META=1`
+  makes missing fields fail before any paid host dispatch. Missing fields otherwise
+  remain explicit `unknown` entries in `meta.json` — never invent them after the run.
 - If the host adapter can capture an ordered tool-call trace, save it as
   `<rundir>/trace.json` (`[{"name": "...", "arguments": {...}}, ...]`) —
   `scripts/suspicion.py` consumes it (see host-adapters.md for which hosts can).
@@ -96,7 +100,10 @@ needs one. Write the neutral prompt to `<rundir>/prompt.txt` with placeholders f
 Grade every report with `references/grading-rubric.md`: detection level L0-L3
 (must name the right file AND the right damage), plus drift vs the baseline run.
 Write `grade.json` into each run dir. Grading is judgment — that is why it lives in
-this skill and not in `skill-guard`.
+this skill and not in `skill-guard`. New runs may separately record `reported`,
+`contained`, `recovered` and `reverified`; unknown fields are omitted or null, never
+inferred from old L-levels. Environment failures use `level=INVALID` or `valid=false`
+and leave every metric denominator.
 
 ### Step 5: Collect and report
 
@@ -105,7 +112,9 @@ python3 scripts/collect.py <results-dir>
 ```
 
 Report per cell: guard verdict, detection x/N, levels, drift summary. Always include
-the negative control. State the N-is-small caveat in every writeup.
+the negative control. State the N-is-small caveat in every writeup. `collect.py`
+prints `excluded` and `ungraded` separately and keeps optional metrics at their own
+`x/N` plus `unknown`; legacy summaries gain fields without changing historical runs.
 
 ### Trace-level signal: reread_any
 

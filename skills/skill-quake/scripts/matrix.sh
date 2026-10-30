@@ -4,6 +4,8 @@
 #   faultspec examples:  truncate-main:60 | truncate-attachment:references/x.md:50
 #                        delete-ref:references/x.md | blank-frontmatter
 # Run once per host. Grade afterwards (see references/grading-rubric.md), then collect.
+# Provenance: QUAKE_TARGET_VERSION / QUAKE_HOST_VERSION / QUAKE_MODEL / QUAKE_EFFORT.
+# QUAKE_STRICT_META=1 rejects incomplete provenance before the first paid dispatch.
 set -euo pipefail
 
 src="$1"; results="$2"; template="$3"; host="$4"; spec="$5"; n="$6"
@@ -32,6 +34,19 @@ case "$fault" in
   blank-frontmatter) cell="$host+$fault";;
   *) echo "matrix: unknown fault '$fault'" >&2; exit 2;;
 esac
+
+# Strict provenance is a preflight check: it must stop before any paid host call.
+if [ "${QUAKE_STRICT_META:-0}" = "1" ]; then
+  missing_meta=()
+  [ -z "${QUAKE_TARGET_VERSION:-}" ] && missing_meta+=(target_version)
+  [ -z "${QUAKE_HOST_VERSION:-}" ] && missing_meta+=(host_version)
+  [ -z "${QUAKE_MODEL:-${CODEX_MODEL:-}}" ] && missing_meta+=(model)
+  [ -z "${QUAKE_EFFORT:-}" ] && missing_meta+=(effort)
+  if [ "${#missing_meta[@]}" -gt 0 ]; then
+    echo "matrix: incomplete provenance: ${missing_meta[*]} (set QUAKE_* before dispatch)" >&2
+    exit 2
+  fi
+fi
 
 # C-style loop: BSD seq (macOS) counts DOWN for `seq 1 0`, which would run
 # two unintended dispatch runs for N=0. `for ((...))` is portable and fork-free.
@@ -65,10 +80,20 @@ for ((i=1; i<=n; i++)); do
     exit 2
   fi
   sed -e "s|__SKILL_PATH__|$stage/skill|g" -e "s|__WORKDIR__|$stage/work|g" "$template" > "$run/prompt.txt"
+  # Hash the exact fixture and prompt before the host can alter anything.
+  meta_args=()
+  [ -n "${QUAKE_TARGET_VERSION:-}" ] && meta_args+=(--target-version "$QUAKE_TARGET_VERSION")
+  [ -n "${QUAKE_HOST_VERSION:-}" ] && meta_args+=(--host-version "$QUAKE_HOST_VERSION")
+  [ -n "${QUAKE_MODEL:-${CODEX_MODEL:-}}" ] && meta_args+=(--model "${QUAKE_MODEL:-${CODEX_MODEL:-}}")
+  [ -n "${QUAKE_EFFORT:-}" ] && meta_args+=(--effort "$QUAKE_EFFORT")
+  [ "${QUAKE_STRICT_META:-0}" = "1" ] && meta_args+=(--strict)
+  python3 "$here/write_meta.py" \
+    --output "$run/meta.json" --host "$host" --fault "$spec" --cell "$cell" \
+    --run "$i" --stage "$stage_id" --prompt "$run/prompt.txt" \
+    --fixture "$stage/skill" --guard "$run/guard.json" --witness-checker "$guard" \
+    ${meta_args[@]+"${meta_args[@]}"}
   echo "== $cell run-$i (stage $stage_id): dispatching to $host"
   bash "$here/run_host.sh" "$host" "$run/prompt.txt" "$stage/work" "$run/report.md" "$stage/skill"
   mv "$run/report.md.exitcode" "$run/exitcode" 2>/dev/null || true
-  printf '{"host":"%s","fault":"%s","cell":"%s","run":%s,"stage":"%s","time":"%s"}\n' \
-    "$host" "$spec" "$cell" "$i" "$stage_id" "$(date -u +%FT%TZ)" > "$run/meta.json"
 done
 echo "cell $cell done: $n run(s) under $results/$cell — now grade each report.md"

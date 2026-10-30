@@ -7,7 +7,8 @@
 > skill-layer experiment (~316 KB vs the umbrella's ~23 MB): clone it and run the
 > matrix, or hand it to someone who will. Narrative docs here
 > (`docs/article-zh-draft.md`, `docs/REPLICATION.md`) are maintained here; the
-> umbrella keeps labelled snapshots.
+> umbrella keeps labelled snapshots. See `docs/ALIGNMENT.md` for the portable
+surface and intentional bundle exclusions.
 
 Fault-injection tooling for Agent Skills, plus the mechanical integrity gate that
 the experiments argue for. Born from an experiment on Alibaba's
