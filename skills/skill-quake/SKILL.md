@@ -59,6 +59,13 @@ this skill orchestrates the parts that need judgment.
 - Define the task the host will perform with the skill (e.g. "evaluate target X").
   The task must exercise the skill's main flow, not a side path.
 
+### Step 0.5: Freeze the experiment card
+
+For a new matrix, start from `examples/experiment-card.json` and validate it with
+`skills/repo-quake/scripts/validate_card.py`. It fixes the claim, controls, witness,
+invalid rules, budget, isolation and ethics before dispatch. Later changes are
+deviations or a new experiment, not silent edits to the past.
+
 ### Step 1: Choose the fault matrix
 
 See `references/fault-menu.md` for the standard faults (truncate-main,

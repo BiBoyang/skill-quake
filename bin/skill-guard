@@ -24,7 +24,14 @@ import os
 import re
 import sys
 
-REF_RE = re.compile(r"(?:references|assets|scripts)/[\w][\w./-]*[\w.]", re.ASCII)
+# A reference starts at a token boundary (start of text, whitespace, quote,
+# bracket, backtick, CJK, ...), optionally prefixed by "./". The lookbehind
+# rejects a match preceded by a path character, so a "scripts/" segment inside a
+# longer path (skills/other/scripts/x.py, a URL, ../scripts/x.py) is not read as a
+# reference into THIS skill. findall() returns the capture group: the path with
+# any "./" prefix dropped, so it joins to the skill root and compares with the
+# os.walk relative paths used by the orphan check.
+REF_RE = re.compile(r"(?<![\w./-])(?:\./)?((?:references|assets|scripts)/[\w][\w./-]*[\w.])", re.ASCII)
 NAME_RE = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
 FENCE_RE = re.compile(r"^```", re.MULTILINE)
 SKIP_DIRS = {".git", "node_modules", "__pycache__"}

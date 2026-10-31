@@ -9,6 +9,7 @@
 > (`docs/article-zh-draft.md`, `docs/REPLICATION.md`) are maintained here; the
 > umbrella keeps labelled snapshots. See `docs/ALIGNMENT.md` for the portable
 surface and intentional bundle exclusions.
+> Last refreshed from `repo-quake@7db0680` on 2026-10-31 (guard, skill, guard fixtures and tests).
 
 Fault-injection tooling for Agent Skills, plus the mechanical integrity gate that
 the experiments argue for. Born from an experiment on Alibaba's
