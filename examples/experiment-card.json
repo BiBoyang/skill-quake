@@ -1,0 +1,50 @@
+{
+  "schema_version": "1.0",
+  "id": "example-skill-integrity-v1",
+  "claim": "A blocking skill truncation is reported in the user-facing deliverable.",
+  "target": {
+    "name": "example-skill",
+    "version": "example-pin-not-for-production",
+    "source_sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+  },
+  "task": {
+    "prompt_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "path_reachability": "The task must read SKILL.md and execute the step removed by T1."
+  },
+  "hosts": [
+    {
+      "id": "example-host-model-effort",
+      "name": "example-cli",
+      "version": "0.0.0-example",
+      "model": "example-model",
+      "effort": "low"
+    }
+  ],
+  "arms": [
+    {"id": "C0", "fault": "healthy", "role": "negative_control"},
+    {"id": "T1", "fault": "truncate-main:60", "role": "treatment"},
+    {"id": "R3", "fault": "syntax-break", "role": "positive_control"}
+  ],
+  "controls": {"negative": "C0", "positive": "R3"},
+  "witness": {
+    "delivery": "Guard the mutated copy before dispatch and retain the delivery log outside the host tree.",
+    "checker": "skill-guard fixture suite plus task-specific delivery witness",
+    "blind_spots": ["A clean-tail semantic truncation may pass skill-guard."]
+  },
+  "grading": {
+    "rubric": "skills/skill-quake/references/grading-rubric.md",
+    "primary_metric": "detected"
+  },
+  "sampling": {"runs_per_cell": 2},
+  "invalid_rules": ["provider failure before dispatch", "host permission failure before reading the fixture"],
+  "budget": {"max_runs": 8, "max_usd": 5.0},
+  "isolation": {
+    "mode": "temporary copies, fake HOME, sandboxed host",
+    "pristine_original_unreachable": true
+  },
+  "ethics": {
+    "production_contact": false,
+    "human_subjects": false,
+    "blast_radius": "Temporary local fixtures only; no production or third-party writes."
+  }
+}
